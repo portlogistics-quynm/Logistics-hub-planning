@@ -1,0 +1,4999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Logistics Hub Planning – ©2026 portlogistics.vn</title>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f3f5f8;
+      --panel: #ffffff;
+      --border: #d7dce4;
+      --text: #20242a;
+      --muted: #667085;
+      --primary: #155eef;
+      --primary-dark: #004ee0;
+      --success: #217346;
+      --danger: #b42318;
+      --warning: #9a6700;
+      --road: #8b8b8b;
+      --rail: #1f9d45;
+      --water: #2457d6;
+      --sea: #00aeb8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 14px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 12px;
+      padding: 13px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      padding: 9px 13px;
+      border: 1px solid #8d97a5;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    button:hover {
+      background: #f2f4f7;
+    }
+
+    button.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+      font-weight: bold;
+    }
+
+    button.primary:hover {
+      background: var(--primary-dark);
+    }
+
+    button.success {
+      border-color: var(--success);
+      background: var(--success);
+      color: white;
+      font-weight: bold;
+    }
+
+    button.success:hover {
+      filter: brightness(0.94);
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .status-panel {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--panel);
+    }
+
+    .status-line {
+      min-height: 20px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .status-line.success {
+      color: var(--success);
+    }
+
+    .status-line.error {
+      color: var(--danger);
+    }
+
+    .status-line.warning {
+      color: var(--warning);
+    }
+
+    .param-line {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(145px, 0.6fr)
+        minmax(110px, 0.4fr)
+        minmax(145px, 0.6fr)
+        minmax(110px, 0.4fr)
+        auto
+        minmax(250px, 1.2fr)
+        minmax(180px, 0.8fr);
+      gap: 8px;
+      align-items: end;
+      margin-top: 9px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 7px 8px;
+      border: 1px solid #aeb7c2;
+      border-radius: 6px;
+      background: white;
+      font-size: 12px;
+    }
+
+    .slider-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .slider-box input {
+      padding: 0;
+    }
+
+    .slider-value {
+      min-width: 90px;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .check-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 9px;
+      font-size: 11px;
+    }
+
+    .check-row label {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .modal-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+
+    .modal-card {
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .modal-card.road {
+      border-left: 6px solid var(--road);
+    }
+
+    .modal-card.rail {
+      border-left: 6px solid var(--rail);
+    }
+
+    .modal-card.water {
+      border-left: 6px solid var(--water);
+    }
+
+    .modal-card.sea {
+      border-left: 6px solid var(--sea);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(650px, 1.35fr) minmax(470px, 0.85fr);
+      gap: 10px;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+
+    .panel-title {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .table-wrap {
+      max-height: 650px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+    }
+
+    th,
+    td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #eef2f7;
+    }
+
+    th:nth-child(-n+3),
+    td:nth-child(-n+3) {
+      text-align: left;
+    }
+
+    .network-area {
+      padding: 10px;
+    }
+
+    #networkCanvas {
+      display: block;
+      width: 100%;
+      height: 550px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: white;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(4, auto);
+      justify-content: center;
+      gap: 16px;
+      margin-top: 8px;
+      font-size: 11px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .legend-line {
+      width: 34px;
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .legend-note {
+      margin-top: 7px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 10px;
+    }
+
+    .tabs-panel {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 8px 8px 0;
+      border-bottom: 1px solid var(--border);
+      background: #eef2f7;
+      overflow-x: auto;
+    }
+
+    .tab-button {
+      padding: 10px 16px;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 7px 7px 0 0;
+      background: transparent;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .tab-button.active {
+      border-color: var(--border);
+      background: white;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 13px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 11px;
+    }
+
+    .chart-card {
+      min-width: 0;
+    }
+
+    .chart-card.full {
+      grid-column: 1 / -1;
+    }
+
+    .chart-title {
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .chart-wrap {
+      position: relative;
+      min-height: 330px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: white;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 8px;
+      margin-bottom: 11px;
+    }
+
+    .kpi-card {
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .kpi-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .kpi-card strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 17px;
+    }
+
+    .audit-wrap {
+      max-height: 450px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+    }
+
+    .audit-wrap th,
+    .audit-wrap td {
+      text-align: left;
+    }
+
+    .footer {
+      margin-top: 10px;
+      color: var(--muted);
+      text-align: right;
+      font-size: 10px;
+    }
+
+    @media (max-width: 1220px) {
+      .control-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .card-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 7px;
+      }
+
+      .control-grid,
+      .modal-strip,
+      .chart-grid,
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-card.full {
+        grid-column: auto;
+      }
+
+      #networkCanvas {
+        height: 430px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header class="header">
+    <h1>Logistics Hub Planning – ©2026 portlogistics.vn</h1>
+
+    <p>
+      Multimodal logistics-hub planning model:
+      IP → LC/ICD → DC → PORT, including LP relaxation,
+      MIP arc opening, mode capacities, export rules, node-flow
+      controls, distance cost, fixed cost, and CO₂.
+    </p>
+  </header>
+
+  <section class="toolbar">
+
+    <button id="importButton" type="button">
+      Import Excel
+    </button>
+
+    <input
+      id="fileInput"
+      type="file"
+      accept=".xlsx,.xls"
+      hidden
+    >
+
+    <button id="solveMIPButton" class="primary" type="button" disabled>
+      Solve MIP
+    </button>
+
+    <button id="solveLPButton" type="button" disabled>
+      Solve LP
+    </button>
+
+    <button id="exportExcelButton" class="success" type="button" disabled>
+      Export Excel
+    </button>
+
+    <button id="kpiButton" type="button" disabled>
+      KPI Charts
+    </button>
+
+    <button id="compareButton" type="button" disabled>
+      Compare LP–MIP
+    </button>
+
+    <button id="dashboardButton" type="button" disabled>
+      Dashboard
+    </button>
+
+    <button id="exportPngButton" type="button" disabled>
+      Export PNG
+    </button>
+
+    <button id="templateButton" type="button">
+      Download Excel Template
+    </button>
+
+  </section>
+
+  <section class="status-panel">
+
+    <div id="statusLine" class="status-line">
+      Status: Loading browser solver...
+    </div>
+
+    <div id="paramLine" class="param-line">
+      Parameters not loaded.
+    </div>
+
+    <div class="control-grid">
+
+      <div class="field">
+        <label for="exportDemandOverride">exportDemand override</label>
+        <input
+          id="exportDemandOverride"
+          type="number"
+          min="0"
+          step="0.01"
+          disabled
+        >
+      </div>
+
+      <div class="field">
+        <label for="kportOverride">KPORT override</label>
+        <input
+          id="kportOverride"
+          type="number"
+          min="0"
+          step="0.01"
+          disabled
+        >
+      </div>
+
+      <button id="applyParamsButton" type="button" disabled>
+        Apply Params
+      </button>
+
+      <div class="field" style="grid-column: span 2;">
+        <label for="kroadSlider">K_road total road capacity</label>
+
+        <div class="slider-box">
+          <input
+            id="kroadSlider"
+            type="range"
+            min="0"
+            max="1000"
+            value="1000"
+            disabled
+          >
+
+          <span id="kroadValue" class="slider-value">
+            K_road = Inf
+          </span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="loadedFile">Loaded file</label>
+        <input
+          id="loadedFile"
+          type="text"
+          value="(none)"
+          readonly
+        >
+      </div>
+
+    </div>
+
+    <div class="check-row">
+
+      <label>
+        <input id="showClosed" type="checkbox" checked disabled>
+        Show closed candidate arcs
+      </label>
+
+      <label>
+        <input id="showLegend" type="checkbox" checked disabled>
+        Show mode legend
+      </label>
+
+      <label>
+        <input id="autoResolve" type="checkbox" checked disabled>
+        Auto re-solve LP when K_road changes
+      </label>
+
+    </div>
+
+  </section>
+
+  <section class="modal-strip">
+
+    <div id="modalRoad" class="modal-card road">
+      Road: 0.0%
+    </div>
+
+    <div id="modalRail" class="modal-card rail">
+      Rail: 0.0%
+    </div>
+
+    <div id="modalWater" class="modal-card water">
+      Waterway: 0.0%
+    </div>
+
+    <div id="modalSea" class="modal-card sea">
+      Sea: 0.0%
+    </div>
+
+  </section>
+
+  <main class="workspace">
+
+    <section class="panel">
+      <div class="panel-title">Optimized Arc Results</div>
+
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>From</th>
+              <th>To</th>
+              <th>Mode</th>
+              <th>Flow</th>
+              <th>OpenY</th>
+              <th>Distance</th>
+              <th>UnitCost</th>
+              <th>FixedCost</th>
+              <th>ArcCost</th>
+              <th>IsExport</th>
+              <th>Cap</th>
+              <th>CO₂</th>
+              <th>TonKM</th>
+            </tr>
+          </thead>
+
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">
+        Network – solid used arcs; dashed closed candidates
+      </div>
+
+      <div class="network-area">
+        <canvas
+          id="networkCanvas"
+          width="900"
+          height="600"
+        ></canvas>
+
+        <div id="networkLegend" class="legend">
+          <div class="legend-item">
+            <span class="legend-line" style="background: var(--road);"></span>
+            Road
+          </div>
+
+          <div class="legend-item">
+            <span class="legend-line" style="background: var(--rail);"></span>
+            Rail
+          </div>
+
+          <div class="legend-item">
+            <span class="legend-line" style="background: var(--water);"></span>
+            Waterway
+          </div>
+
+          <div class="legend-item">
+            <span class="legend-line" style="background: var(--sea);"></span>
+            Sea
+          </div>
+        </div>
+
+        <div class="legend-note">
+          Solid = flow &gt; 0; grey dashed = Enabled candidate with zero flow.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <section class="tabs-panel">
+
+    <div class="tabs">
+
+      <button class="tab-button active" data-tab="kpiTab" type="button">
+        KPI
+      </button>
+
+      <button class="tab-button" data-tab="compareTab" type="button">
+        LP–MIP Comparison
+      </button>
+
+      <button class="tab-button" data-tab="dashboardTab" type="button">
+        Integrated Dashboard
+      </button>
+
+      <button class="tab-button" data-tab="auditTab" type="button">
+        Parameter Audit
+      </button>
+
+    </div>
+
+    <div id="kpiTab" class="tab-content active">
+
+      <div class="chart-grid">
+
+        <article class="chart-card">
+          <div class="chart-title">Cost KPI</div>
+          <div class="chart-wrap">
+            <canvas id="costChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-title">Modal Flow</div>
+          <div class="chart-wrap">
+            <canvas id="modeFlowChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-title">Ton-km and CO₂ by Mode</div>
+          <div class="chart-wrap">
+            <canvas id="modeImpactChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-title">Node Inflow and Outflow</div>
+          <div class="chart-wrap">
+            <canvas id="nodeFlowChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card full">
+          <div class="chart-title">PORT Export Flow vs KPORT</div>
+          <div class="chart-wrap">
+            <canvas id="portChart"></canvas>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <div id="compareTab" class="tab-content">
+
+      <div class="chart-grid">
+
+        <article class="chart-card">
+          <div class="chart-title">Cost Comparison</div>
+          <div class="chart-wrap">
+            <canvas id="compareCostChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-title">Network KPI Comparison</div>
+          <div class="chart-wrap">
+            <canvas id="compareNetworkChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-title">Flow by Mode</div>
+          <div class="chart-wrap">
+            <canvas id="compareModeFlowChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-title">Mode Share</div>
+          <div class="chart-wrap">
+            <canvas id="compareModeShareChart"></canvas>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <div id="dashboardTab" class="tab-content">
+
+      <div id="dashboardCards" class="card-grid"></div>
+
+      <div class="chart-grid">
+
+        <article class="chart-card">
+          <div class="chart-title">Total Cost and Total CO₂</div>
+          <div class="chart-wrap">
+            <canvas id="dashboardMainChart"></canvas>
+          </div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-title">Mode Share</div>
+          <div class="chart-wrap">
+            <canvas id="dashboardModeChart"></canvas>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <div id="auditTab" class="tab-content">
+
+      <div class="audit-wrap">
+        <table id="auditTable">
+          <thead>
+            <tr>
+              <th>ParamName</th>
+              <th>MatchedRawKey</th>
+              <th>RowIndex</th>
+              <th>Status</th>
+              <th>ValueUsed</th>
+            </tr>
+          </thead>
+
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="footer">
+    Logistics Hub Planning Model ©2026 portlogistics.vn
+  </div>
+
+</div>
+
+<script type="module">
+  // ==========================================================
+  // SOLVER INITIALIZATION
+  // ==========================================================
+
+  let glpk = null;
+  let solverLoading = false;
+  let solverLoadError = "";
+
+  const state = {
+    data: null,
+    res: null,
+    resLP: null,
+    resMIP: null,
+    workbookName: ""
+  };
+
+  const charts = {};
+
+  const modeColors = {
+    Road: "#8b8b8b",
+    Rail: "#1f9d45",
+    Water: "#2457d6",
+    Sea: "#00aeb8"
+  };
+
+  // The Excel import controls are initialized independently from GLPK.
+  // This prevents a failed/slow solver CDN from disabling the Import Excel button.
+
+  // ==========================================================
+  // DOM
+  // ==========================================================
+
+  const fileInput = document.getElementById("fileInput");
+  const importButton = document.getElementById("importButton");
+  const solveMIPButton = document.getElementById("solveMIPButton");
+  const solveLPButton = document.getElementById("solveLPButton");
+  const exportExcelButton = document.getElementById("exportExcelButton");
+  const kpiButton = document.getElementById("kpiButton");
+  const compareButton = document.getElementById("compareButton");
+  const dashboardButton = document.getElementById("dashboardButton");
+  const exportPngButton = document.getElementById("exportPngButton");
+  const templateButton = document.getElementById("templateButton");
+
+  const statusLine = document.getElementById("statusLine");
+  const paramLine = document.getElementById("paramLine");
+  const loadedFile = document.getElementById("loadedFile");
+
+  const exportDemandOverride =
+    document.getElementById("exportDemandOverride");
+
+  const kportOverride =
+    document.getElementById("kportOverride");
+
+  const applyParamsButton =
+    document.getElementById("applyParamsButton");
+
+  const kroadSlider =
+    document.getElementById("kroadSlider");
+
+  const kroadValue =
+    document.getElementById("kroadValue");
+
+  const showClosed =
+    document.getElementById("showClosed");
+
+  const showLegend =
+    document.getElementById("showLegend");
+
+  const autoResolve =
+    document.getElementById("autoResolve");
+
+  const resultsBody =
+    document.querySelector("#resultsTable tbody");
+
+  const auditBody =
+    document.querySelector("#auditTable tbody");
+
+  const networkCanvas =
+    document.getElementById("networkCanvas");
+
+  const networkContext =
+    networkCanvas.getContext("2d");
+
+  // ==========================================================
+  // TABS
+  // ==========================================================
+
+  document
+    .querySelectorAll(".tab-button")
+    .forEach(button => {
+      button.addEventListener("click", () => {
+        openTab(button.dataset.tab);
+      });
+    });
+
+  function openTab(tabId) {
+    document
+      .querySelectorAll(".tab-button")
+      .forEach(button => {
+        button.classList.toggle(
+          "active",
+          button.dataset.tab === tabId
+        );
+      });
+
+    document
+      .querySelectorAll(".tab-content")
+      .forEach(content => {
+        content.classList.toggle(
+          "active",
+          content.id === tabId
+        );
+      });
+  }
+
+  // ==========================================================
+  // STATUS AND ENABLEMENT
+  // ==========================================================
+
+  function setStatus(message, type = "") {
+    statusLine.textContent = `Status: ${message}`;
+    statusLine.className = `status-line ${type}`;
+  }
+
+  function enableAfterImport() {
+    [
+      applyParamsButton,
+      kroadSlider,
+      exportDemandOverride,
+      kportOverride,
+      showClosed,
+      showLegend,
+      autoResolve
+    ].forEach(element => {
+      element.disabled = false;
+    });
+
+    updateSolverButtonState();
+  }
+
+  function updateSolverButtonState() {
+    const ready = Boolean(state.data && glpk);
+
+    solveMIPButton.disabled = !ready;
+    solveLPButton.disabled = !ready;
+    compareButton.disabled = !ready;
+  }
+
+  async function initializeSolver() {
+    if (glpk || solverLoading) {
+      return;
+    }
+
+    solverLoading = true;
+    solverLoadError = "";
+
+    if (!state.data) {
+      setStatus(
+        "Import Excel is ready. Loading the LP/MIP solver in the background..."
+      );
+    }
+
+    const candidateUrls = [
+      "https://cdn.jsdelivr.net/npm/glpk.js@5.0.0/+esm",
+      "https://esm.sh/glpk.js@5.0.0"
+    ];
+
+    let lastError = null;
+
+    for (const url of candidateUrls) {
+      try {
+        const module = await import(url);
+        const factory = module.default || module.GLPK || module;
+
+        if (typeof factory !== "function") {
+          throw new Error("The downloaded module does not expose a GLPK factory function.");
+        }
+
+        glpk = await factory();
+
+        if (!glpk || typeof glpk.solve !== "function") {
+          throw new Error("GLPK initialized without a solve() function.");
+        }
+
+        solverLoading = false;
+        updateSolverButtonState();
+
+        const versionText = glpk.version ? ` ${glpk.version}` : "";
+        setStatus(
+          state.data
+            ? `Browser solver ready: GLPK${versionText}. You can now solve LP or MIP.`
+            : `Browser solver ready: GLPK${versionText}. Import Excel to begin.`,
+          "success"
+        );
+
+        return;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    solverLoading = false;
+    solverLoadError = lastError?.message || "Unknown solver loading error";
+    updateSolverButtonState();
+
+    setStatus(
+      `Excel import is available, but the LP/MIP solver could not be loaded: ${solverLoadError}. Check the Internet connection, then refresh the page.`,
+      "warning"
+    );
+  }
+
+  function enableAfterSolve() {
+    [
+      exportExcelButton,
+      kpiButton,
+      dashboardButton,
+      exportPngButton
+    ].forEach(element => {
+      element.disabled = false;
+    });
+  }
+
+  // ==========================================================
+  // FILE IMPORT
+  // ==========================================================
+
+  importButton.addEventListener("click", () => {
+    // Reset the value so the same workbook can be selected again.
+    fileInput.value = "";
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", async event => {
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      if (typeof XLSX === "undefined") {
+        throw new Error(
+          "The SheetJS Excel library did not load. Check the Internet connection and refresh the page."
+        );
+      }
+
+      setStatus("Reading Excel workbook...");
+
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, {
+        type: "array",
+        cellDates: true
+      });
+
+      const data = readWorkbook(workbook);
+
+      state.data = data;
+      state.res = null;
+      state.resLP = null;
+      state.resMIP = null;
+      state.workbookName = file.name;
+
+      loadedFile.value = file.name;
+      exportDemandOverride.value =
+        formatInputValue(data.params.exportDemand);
+
+      kportOverride.value =
+        Number.isFinite(data.params.KPORT)
+          ? formatInputValue(data.params.KPORT)
+          : "";
+
+      const totalSupply =
+        data.supply.reduce(
+          (sum, value) => sum + value,
+          0
+        );
+
+      const sliderMaximum =
+        Math.max(
+          1,
+          Math.ceil(1.2 * totalSupply)
+        );
+
+      kroadSlider.max =
+        String(sliderMaximum);
+
+      if (Number.isFinite(data.params.K_road)) {
+        kroadSlider.value =
+          String(
+            clamp(
+              data.params.K_road,
+              0,
+              sliderMaximum
+            )
+          );
+
+        kroadValue.textContent =
+          `K_road = ${formatNumber(data.params.K_road)}`;
+      } else {
+        kroadSlider.value =
+          String(sliderMaximum);
+
+        kroadValue.textContent =
+          "K_road = Inf";
+      }
+
+      clearResults();
+      updateParamLine();
+      updateAuditTable();
+      drawNetwork(null);
+
+      enableAfterImport();
+
+      if (glpk) {
+        setStatus(
+          `Imported ${file.name}; all arcs=${data.ArcsAll.length}; enabled arcs=${data.Arcs.length}. Ready to solve.`,
+          "success"
+        );
+      } else {
+        setStatus(
+          `Imported ${file.name}; all arcs=${data.ArcsAll.length}; enabled arcs=${data.Arcs.length}. Waiting for the LP/MIP solver to finish loading.`,
+          "warning"
+        );
+
+        initializeSolver();
+      }
+    } catch (error) {
+      state.data = null;
+      setStatus(`Import error: ${error.message}`, "error");
+    }
+  });
+
+  // ==========================================================
+  // WORKBOOK PARSING
+  // ==========================================================
+
+  function readWorkbook(workbook) {
+    const supplyRows =
+      sheetRows(workbook, "Supply");
+
+    const demandRows =
+      sheetRows(workbook, "Demand");
+
+    const paramRows =
+      sheetRows(workbook, "Params");
+
+    const arcRows =
+      sheetRows(workbook, "Arcs");
+
+    requireColumns(
+      supplyRows,
+      ["IP", "Supply"],
+      "Supply"
+    );
+
+    requireColumns(
+      demandRows,
+      ["DC", "Demand"],
+      "Demand"
+    );
+
+    requireColumns(
+      paramRows,
+      ["Key", "Value"],
+      "Params"
+    );
+
+    requireColumns(
+      arcRows,
+      [
+        "From",
+        "To",
+        "Mode",
+        "UnitCost",
+        "Cap",
+        "Enabled",
+        "IsExport"
+      ],
+      "Arcs"
+    );
+
+    const supplyTable =
+      supplyRows.map(row => ({
+        IP: cleanString(row.IP),
+        Supply: toNumber(row.Supply)
+      }));
+
+    const demandTable =
+      demandRows.map(row => ({
+        DC: cleanString(row.DC),
+        Demand: toNumber(row.Demand)
+      }));
+
+    const arcsAll =
+      arcRows.map((row, index) => ({
+        ArcIndex: index + 1,
+        From: cleanString(row.From),
+        To: cleanString(row.To),
+        Mode: cleanString(row.Mode),
+        UnitCost: toNumber(row.UnitCost),
+        Cap: optionalNumber(row.Cap),
+        FixedCost:
+          row.FixedCost === undefined ||
+          row.FixedCost === null ||
+          row.FixedCost === ""
+            ? 0
+            : toNumber(row.FixedCost),
+        Enabled:
+          toNumber(row.Enabled) !== 0
+            ? 1
+            : 0,
+        IsExport:
+          toNumber(row.IsExport) !== 0
+            ? 1
+            : 0,
+        Distance:
+          row.Distance === undefined ||
+          row.Distance === null ||
+          row.Distance === ""
+            ? 1
+            : toNumber(row.Distance),
+        Notes:
+          row.Notes === undefined ||
+          row.Notes === null
+            ? ""
+            : cleanString(row.Notes)
+      }));
+
+    validateInputTables(
+      supplyTable,
+      demandTable,
+      arcsAll
+    );
+
+    const defaults = defaultParams();
+    const params = { ...defaults };
+
+    const rawKeys =
+      paramRows.map(row =>
+        cleanString(row.Key)
+      );
+
+    const normalizedKeys =
+      rawKeys.map(normalizeParamKey);
+
+    const paramValues =
+      paramRows.map(row =>
+        optionalNumber(row.Value)
+      );
+
+    const paramAudit = [];
+
+    for (const paramName of Object.keys(defaults)) {
+      const target =
+        normalizeParamKey(paramName);
+
+      const matches = [];
+
+      normalizedKeys.forEach(
+        (key, index) => {
+          if (
+            key === target &&
+            Number.isFinite(paramValues[index])
+          ) {
+            matches.push(index);
+          }
+        }
+      );
+
+      if (matches.length > 0) {
+        const index =
+          matches[matches.length - 1];
+
+        params[paramName] =
+          paramValues[index];
+
+        paramAudit.push({
+          ParamName: paramName,
+          MatchedRawKey: rawKeys[index],
+          RowIndex: index + 1,
+          Status:
+            matches.length > 1
+              ? `DUPLICATE_KEY_LAST_USED_${matches.length}_MATCHES`
+              : "OK",
+          ValueUsed: params[paramName]
+        });
+      } else {
+        paramAudit.push({
+          ParamName: paramName,
+          MatchedRawKey: "",
+          RowIndex: "",
+          Status: "DEFAULT_USED",
+          ValueUsed: params[paramName]
+        });
+      }
+    }
+
+    applyAliasParameter(
+      params,
+      paramAudit,
+      "exportDemand",
+      rawKeys,
+      normalizedKeys,
+      paramValues,
+      [
+        "exportdemand",
+        "exportvolume",
+        "exportflow",
+        "requiredexport",
+        "requiredexportdemand",
+        "exportquantity",
+        "exporttonnage",
+        "xuatkhau",
+        "hangxuatkhau",
+        "luonghangxuatkhau",
+        "nhucauxuatkhau"
+      ],
+      false
+    );
+
+    applyAliasParameter(
+      params,
+      paramAudit,
+      "KPORT",
+      rawKeys,
+      normalizedKeys,
+      paramValues,
+      [
+        "kport",
+        "portcapacity",
+        "capacityport",
+        "portcap",
+        "kportcapacity",
+        "portk",
+        "congsuatcang",
+        "congsuatport",
+        "succhuacang",
+        "cangcapacity"
+      ],
+      true
+    );
+
+    validateCommonParams(params);
+    validateNodeFlowOptions("LC", params);
+    validateNodeFlowOptions("ICD", params);
+    validateNodeFlowOptions("PORT", params);
+
+    let supply =
+      supplyTable.map(row => row.Supply);
+
+    let demand =
+      demandTable.map(row => row.Demand);
+
+    const totalSupply =
+      sum(supply);
+
+    const totalDemand =
+      sum(demand);
+
+    if (
+      Number.isFinite(params.KPORT) &&
+      params.KPORT >= 1e8
+    ) {
+      paramAudit.push({
+        ParamName: "KPORT",
+        MatchedRawKey: "",
+        RowIndex: "",
+        Status:
+          "PLACEHOLDER_1E8_IGNORED_SET_TO_NAN",
+        ValueUsed: params.KPORT
+      });
+
+      params.KPORT = NaN;
+    }
+
+    const surplus =
+      totalSupply - totalDemand;
+
+    if (params.exportDemand > 0) {
+      if (params.ExportRule === 2) {
+        if (
+          Math.abs(
+            surplus -
+            params.exportDemand
+          ) > 1e-6
+        ) {
+          throw new Error(
+            `Fixed export balance error: exportDemand=${formatNumber(params.exportDemand)}, but Supply - DomesticDemand=${formatNumber(surplus)}. The web model does not replace exportDemand automatically.`
+          );
+        }
+      } else if (
+        surplus <
+        params.exportDemand -
+        1e-9
+      ) {
+        throw new Error(
+          `Minimum export infeasible: Supply - DomesticDemand=${formatNumber(surplus)} < exportDemand=${formatNumber(params.exportDemand)}.`
+        );
+      }
+    } else if (
+      Math.abs(
+        totalSupply -
+        totalDemand
+      ) > 1e-6
+    ) {
+      if (params.AutoBalance !== 0) {
+        demand[demand.length - 1] +=
+          totalSupply -
+          totalDemand;
+
+        if (
+          demand[demand.length - 1] <
+          -1e-9
+        ) {
+          throw new Error(
+            "AutoBalance would make the final demand negative."
+          );
+        }
+
+        demand[demand.length - 1] =
+          Math.max(
+            0,
+            demand[demand.length - 1]
+          );
+      } else {
+        throw new Error(
+          `Supply and demand are not balanced: Supply=${formatNumber(totalSupply)}, Demand=${formatNumber(totalDemand)}. Set exportDemand, use AutoBalance=1, or add a dummy node.`
+        );
+      }
+    }
+
+    return {
+      IP:
+        supplyTable.map(row => row.IP),
+      DC:
+        demandTable.map(row => row.DC),
+      supply,
+      demand,
+      totalSupply:
+        sum(supply),
+      totalDomesticDemand:
+        sum(demand),
+      surplusForExport:
+        sum(supply) -
+        sum(demand),
+      params,
+      paramAudit,
+      ArcsAll: arcsAll,
+      Arcs:
+        arcsAll.filter(
+          arc => arc.Enabled === 1
+        )
+    };
+  }
+
+  function sheetRows(workbook, desiredName) {
+    const sheetName =
+      workbook.SheetNames.find(
+        name =>
+          name.trim().toLowerCase() ===
+          desiredName.toLowerCase()
+      );
+
+    if (!sheetName) {
+      throw new Error(
+        `Required sheet "${desiredName}" was not found.`
+      );
+    }
+
+    return XLSX.utils.sheet_to_json(
+      workbook.Sheets[sheetName],
+      {
+        defval: null,
+        raw: true
+      }
+    );
+  }
+
+  function requireColumns(
+    rows,
+    required,
+    sheetName
+  ) {
+    if (rows.length === 0) {
+      throw new Error(
+        `${sheetName} sheet is empty.`
+      );
+    }
+
+    const available =
+      Object.keys(rows[0]);
+
+    const missing =
+      required.filter(
+        name => !available.includes(name)
+      );
+
+    if (missing.length > 0) {
+      throw new Error(
+        `${sheetName} sheet is missing columns: ${missing.join(", ")}.`
+      );
+    }
+  }
+
+  function validateInputTables(
+    supplyTable,
+    demandTable,
+    arcs
+  ) {
+    if (
+      supplyTable.some(
+        row => !row.IP
+      )
+    ) {
+      throw new Error(
+        "Supply sheet contains an empty IP name."
+      );
+    }
+
+    if (
+      demandTable.some(
+        row => !row.DC
+      )
+    ) {
+      throw new Error(
+        "Demand sheet contains an empty DC name."
+      );
+    }
+
+    validateNonnegative(
+      supplyTable.map(row => row.Supply),
+      "Supply"
+    );
+
+    validateNonnegative(
+      demandTable.map(row => row.Demand),
+      "Demand"
+    );
+
+    validateNonnegative(
+      arcs.map(arc => arc.UnitCost),
+      "UnitCost"
+    );
+
+    validateNonnegative(
+      arcs.map(arc => arc.FixedCost),
+      "FixedCost"
+    );
+
+    validateNonnegative(
+      arcs.map(arc => arc.Distance),
+      "Distance"
+    );
+
+    const validModes =
+      new Set([
+        "Road",
+        "Rail",
+        "Water",
+        "Sea"
+      ]);
+
+    for (const arc of arcs) {
+      if (!arc.From || !arc.To) {
+        throw new Error(
+          "Arcs sheet contains an empty From or To node."
+        );
+      }
+
+      if (!validModes.has(arc.Mode)) {
+        throw new Error(
+          `Invalid mode "${arc.Mode}". Allowed values: Road, Rail, Water, Sea.`
+        );
+      }
+
+      if (
+        Number.isFinite(arc.Cap) &&
+        arc.Cap < 0
+      ) {
+        throw new Error(
+          "Arc Cap must be non-negative or blank."
+        );
+      }
+    }
+
+    const keys =
+      new Set();
+
+    for (const arc of arcs) {
+      const key =
+        `${arc.From}->${arc.To}|${arc.Mode}`;
+
+      if (keys.has(key)) {
+        throw new Error(
+          `Duplicate arc found: ${key}. Aggregate or make arcs unique.`
+        );
+      }
+
+      keys.add(key);
+    }
+  }
+
+  function validateNonnegative(
+    values,
+    name
+  ) {
+    if (
+      values.some(
+        value =>
+          !Number.isFinite(value) ||
+          value < 0
+      )
+    ) {
+      throw new Error(
+        `${name} must be finite and non-negative.`
+      );
+    }
+  }
+
+  function defaultParams() {
+    return {
+      exportDemand: 0,
+      ExportRule: 2,
+      AutoBalance: 0,
+      UseDistanceCost: 1,
+      KL: NaN,
+      KICD: NaN,
+      KPORT: NaN,
+      hL: 0,
+      hICD: 0,
+      hPORT: 0,
+      BigM: 500,
+      K_road: Infinity,
+      K_rail: Infinity,
+      K_water: Infinity,
+      K_sea: Infinity,
+      EF_road: 0,
+      EF_rail: 0,
+      EF_water: 0,
+      EF_sea: 0,
+      Emax: Infinity,
+      lambdaCO2: 0,
+      LC_FixFlow: NaN,
+      LC_MinFlow: NaN,
+      LC_MaxFlow: NaN,
+      LC_FlowType: 1,
+      ICD_FixFlow: NaN,
+      ICD_MinFlow: NaN,
+      ICD_MaxFlow: NaN,
+      ICD_FlowType: 1,
+      PORT_FixFlow: NaN,
+      PORT_MinFlow: NaN,
+      PORT_MaxFlow: NaN,
+      PORT_FlowType: 1
+    };
+  }
+
+  function applyAliasParameter(
+    params,
+    audit,
+    paramName,
+    rawKeys,
+    normalizedKeys,
+    values,
+    aliases,
+    avoidHugePlaceholder
+  ) {
+    const indices = [];
+
+    normalizedKeys.forEach(
+      (key, index) => {
+        if (
+          aliases.includes(key) &&
+          Number.isFinite(values[index])
+        ) {
+          indices.push(index);
+        }
+      }
+    );
+
+    if (indices.length === 0) {
+      return;
+    }
+
+    let selected =
+      indices[indices.length - 1];
+
+    if (avoidHugePlaceholder) {
+      const nonHuge =
+        indices.filter(
+          index =>
+            values[index] < 1e8
+        );
+
+      if (nonHuge.length > 0) {
+        selected =
+          nonHuge[nonHuge.length - 1];
+      }
+    }
+
+    params[paramName] =
+      values[selected];
+
+    audit.push({
+      ParamName: paramName,
+      MatchedRawKey: rawKeys[selected],
+      RowIndex: selected + 1,
+      Status:
+        indices.length > 1
+          ? `ALIAS_OVERRIDE_${indices.length}_MATCHES`
+          : "ALIAS_OVERRIDE",
+      ValueUsed: params[paramName]
+    });
+  }
+
+  function validateCommonParams(params) {
+    if (
+      ![1, 2].includes(
+        Number(params.ExportRule)
+      )
+    ) {
+      throw new Error(
+        "ExportRule must be 1 (minimum export) or 2 (fixed export)."
+      );
+    }
+
+    if (
+      ![0, 1].includes(
+        Number(params.AutoBalance)
+      )
+    ) {
+      throw new Error(
+        "AutoBalance must be 0 or 1."
+      );
+    }
+
+    if (
+      ![0, 1].includes(
+        Number(params.UseDistanceCost)
+      )
+    ) {
+      throw new Error(
+        "UseDistanceCost must be 0 or 1."
+      );
+    }
+
+    if (
+      !Number.isFinite(params.BigM) ||
+      params.BigM <= 0
+    ) {
+      throw new Error(
+        "BigM must be positive and finite."
+      );
+    }
+  }
+
+  function validateNodeFlowOptions(
+    node,
+    params
+  ) {
+    const fixValue =
+      params[`${node}_FixFlow`];
+
+    const minValue =
+      params[`${node}_MinFlow`];
+
+    const maxValue =
+      params[`${node}_MaxFlow`];
+
+    const flowType =
+      Number(
+        params[`${node}_FlowType`]
+      );
+
+    if (![1, 2, 3].includes(flowType)) {
+      throw new Error(
+        `${node}_FlowType must be 1 (inflow), 2 (outflow), or 3 (throughput).`
+      );
+    }
+
+    for (const [label, value] of [
+      ["FixFlow", fixValue],
+      ["MinFlow", minValue],
+      ["MaxFlow", maxValue]
+    ]) {
+      if (
+        Number.isFinite(value) &&
+        value < 0
+      ) {
+        throw new Error(
+          `${node}_${label} must be non-negative.`
+        );
+      }
+    }
+
+    if (
+      Number.isFinite(fixValue) &&
+      Number.isFinite(minValue) &&
+      Math.abs(
+        fixValue -
+        minValue
+      ) > 1e-9
+    ) {
+      throw new Error(
+        `${node}_FixFlow conflicts with ${node}_MinFlow.`
+      );
+    }
+
+    if (
+      Number.isFinite(fixValue) &&
+      Number.isFinite(maxValue) &&
+      Math.abs(
+        fixValue -
+        maxValue
+      ) > 1e-9
+    ) {
+      throw new Error(
+        `${node}_FixFlow conflicts with ${node}_MaxFlow.`
+      );
+    }
+
+    if (
+      Number.isFinite(minValue) &&
+      Number.isFinite(maxValue) &&
+      minValue > maxValue
+    ) {
+      throw new Error(
+        `${node}_MinFlow cannot exceed ${node}_MaxFlow.`
+      );
+    }
+  }
+
+  // ==========================================================
+  // PARAMETER OVERRIDES
+  // ==========================================================
+
+  applyParamsButton.addEventListener("click", () => {
+    try {
+      applyParameterOverrides(true);
+    } catch (error) {
+      setStatus(error.message, "error");
+    }
+  });
+
+  function applyParameterOverrides(showMessage) {
+    if (!state.data) {
+      return false;
+    }
+
+    const oldExportDemand = state.data.params.exportDemand;
+    const oldKport = state.data.params.KPORT;
+
+    const exportValue =
+      optionalNumber(
+        exportDemandOverride.value
+      );
+
+    const kportValue =
+      optionalNumber(
+        kportOverride.value
+      );
+
+    if (
+      Number.isFinite(exportValue) &&
+      exportValue >= 0
+    ) {
+      state.data.params.exportDemand =
+        exportValue;
+    }
+
+    if (
+      Number.isFinite(kportValue) &&
+      kportValue >= 0 &&
+      kportValue < 1e8
+    ) {
+      state.data.params.KPORT =
+        kportValue;
+    } else if (
+      String(kportOverride.value).trim() === ""
+    ) {
+      state.data.params.KPORT = NaN;
+    }
+
+    const newKport = state.data.params.KPORT;
+    const kportChanged =
+      Number.isNaN(oldKport)
+        ? !Number.isNaN(newKport)
+        : Number.isNaN(newKport) || Math.abs(oldKport - newKport) > 1e-12;
+
+    const changed =
+      Math.abs(oldExportDemand - state.data.params.exportDemand) > 1e-12 ||
+      kportChanged;
+
+    if (changed) {
+      state.res = null;
+      state.resLP = null;
+      state.resMIP = null;
+
+      clearResults();
+    }
+
+    updateParamLine();
+    updateSolverButtonState();
+
+    if (showMessage) {
+      setStatus(
+        changed
+          ? `Parameters applied. ExportRule remains ${state.data.params.ExportRule === 2 ? "fixed" : "minimum"}.`
+          : "No parameter value changed.",
+        "success"
+      );
+    }
+
+    return changed;
+  }
+
+  kroadSlider.addEventListener("input", () => {
+    if (!state.data) {
+      return;
+    }
+
+    const maximum =
+      Number(kroadSlider.max);
+
+    const value =
+      Number(kroadSlider.value);
+
+    if (value >= 0.98 * maximum) {
+      state.data.params.K_road =
+        Infinity;
+
+      kroadValue.textContent =
+        "K_road = Inf";
+    } else {
+      state.data.params.K_road =
+        Math.round(value);
+
+      kroadValue.textContent =
+        `K_road = ${state.data.params.K_road}`;
+    }
+
+    updateParamLine();
+  });
+
+  kroadSlider.addEventListener("change", async () => {
+    if (
+      state.data &&
+      autoResolve.checked
+    ) {
+      try {
+        await solveAndDisplay(false, "LP auto");
+      } catch (error) {
+        setStatus(
+          `Auto-solve error: ${error.message}`,
+          "error"
+        );
+      }
+    }
+  });
+
+  showClosed.addEventListener("change", () => {
+    drawNetwork(state.res);
+  });
+
+  showLegend.addEventListener("change", () => {
+    document
+      .getElementById("networkLegend")
+      .style
+      .display =
+        showLegend.checked
+          ? "grid"
+          : "none";
+  });
+
+  // ==========================================================
+  // SOLVE BUTTONS
+  // ==========================================================
+
+  solveLPButton.addEventListener("click", async () => {
+    try {
+      await solveAndDisplay(false, "LP relaxation");
+    } catch (error) {
+      setStatus(
+        `LP error: ${error.message}`,
+        "error"
+      );
+    }
+  });
+
+  solveMIPButton.addEventListener("click", async () => {
+    try {
+      await solveAndDisplay(true, "MIP");
+    } catch (error) {
+      setStatus(
+        `MIP error: ${error.message}`,
+        "error"
+      );
+    }
+  });
+
+  async function solveAndDisplay(
+    useMIP,
+    solverName
+  ) {
+    if (!state.data) {
+      throw new Error(
+        "Import Excel first."
+      );
+    }
+
+    if (!glpk) {
+      throw new Error(
+        "GLPK browser solver is not available."
+      );
+    }
+
+    applyParameterOverrides(false);
+
+    setStatus(
+      `Solving ${solverName}...`
+    );
+
+    await new Promise(
+      resolve => setTimeout(resolve, 20)
+    );
+
+    const result =
+      await solveModel(
+        state.data,
+        useMIP
+      );
+
+    result.solverName = solverName;
+
+    state.res = result;
+
+    if (useMIP) {
+      state.resMIP = result;
+    } else {
+      state.resLP = result;
+    }
+
+    updateResultsTable(result);
+    drawNetwork(result);
+    updateModalSplit(result);
+    updateKPI(result);
+    updateDashboard();
+
+    enableAfterSolve();
+
+    const exportText =
+      `ExportFlow=${formatNumber(result.exportFlow)} / Required=${formatNumber(result.requiredExportDemand)}`;
+
+    setStatus(
+      `${solverName} solved; TotalCost=${formatNumber(result.totalCost)}; UsedArcs=${result.x.filter(value => value > 1e-7).length}; ${exportText}.`,
+      "success"
+    );
+
+    updateParamLine(result);
+
+    return result;
+  }
+
+  // ==========================================================
+  // GLPK MODEL
+  // ==========================================================
+
+  async function solveModel(
+    data,
+    useMIP
+  ) {
+    const arcs = data.Arcs;
+    const params = data.params;
+    const arcCount = arcs.length;
+
+    if (arcCount === 0) {
+      throw new Error(
+        "There are no enabled candidate arcs."
+      );
+    }
+
+    const xNames =
+      arcs.map(
+        (_, index) => `x_${index}`
+      );
+
+    const yNames =
+      arcs.map(
+        (_, index) => `y_${index}`
+      );
+
+    const distance =
+      arcs.map(arc =>
+        Number.isFinite(arc.Distance)
+          ? arc.Distance
+          : 1
+      );
+
+    const effectiveCost =
+      arcs.map(
+        (arc, index) => {
+          let cost =
+            params.UseDistanceCost !== 0
+              ? arc.UnitCost *
+                distance[index]
+              : arc.UnitCost;
+
+          if (arc.To === "LC") {
+            cost += params.hL;
+          }
+
+          if (arc.To === "ICD") {
+            cost += params.hICD;
+          }
+
+          if (arc.To === "PORT") {
+            cost += params.hPORT;
+          }
+
+          return cost;
+        }
+      );
+
+    const emissionFactor =
+      arcs.map(
+        (arc, index) => {
+          let factor = {
+            Road: params.EF_road,
+            Rail: params.EF_rail,
+            Water: params.EF_water,
+            Sea: params.EF_sea
+          }[arc.Mode] ?? 0;
+
+          if (params.UseDistanceCost !== 0) {
+            factor *= distance[index];
+          }
+
+          return factor;
+        }
+      );
+
+    const objectiveVars = [];
+
+    arcs.forEach((arc, index) => {
+      objectiveVars.push({
+        name: xNames[index],
+        coef:
+          effectiveCost[index] +
+          params.lambdaCO2 *
+          emissionFactor[index]
+      });
+
+      objectiveVars.push({
+        name: yNames[index],
+        coef: arc.FixedCost
+      });
+    });
+
+    const subjectTo = [];
+    const bounds = [];
+
+    function rowVars(coefficients) {
+      return Object
+        .entries(coefficients)
+        .filter(
+          ([, coefficient]) =>
+            Math.abs(coefficient) > 1e-12
+        )
+        .map(
+          ([name, coefficient]) => ({
+            name,
+            coef: coefficient
+          })
+        );
+    }
+
+    function addEquality(
+      name,
+      coefficients,
+      value
+    ) {
+      subjectTo.push({
+        name,
+        vars: rowVars(coefficients),
+        bnds: {
+          type: glpk.GLP_FX,
+          lb: value,
+          ub: value
+        }
+      });
+    }
+
+    function addUpper(
+      name,
+      coefficients,
+      upper
+    ) {
+      subjectTo.push({
+        name,
+        vars: rowVars(coefficients),
+        bnds: {
+          type: glpk.GLP_UP,
+          lb: 0,
+          ub: upper
+        }
+      });
+    }
+
+    function addLower(
+      name,
+      coefficients,
+      lower
+    ) {
+      subjectTo.push({
+        name,
+        vars: rowVars(coefficients),
+        bnds: {
+          type: glpk.GLP_LO,
+          lb: lower,
+          ub: 0
+        }
+      });
+    }
+
+    function nodeNetRow(node) {
+      const coefficients = {};
+
+      arcs.forEach((arc, index) => {
+        if (arc.From === node) {
+          coefficients[xNames[index]] =
+            (coefficients[xNames[index]] || 0) +
+            1;
+        }
+
+        if (arc.To === node) {
+          coefficients[xNames[index]] =
+            (coefficients[xNames[index]] || 0) -
+            1;
+        }
+      });
+
+      return coefficients;
+    }
+
+    data.IP.forEach((node, index) => {
+      addEquality(
+        `supply_${index}`,
+        nodeNetRow(node),
+        data.supply[index]
+      );
+    });
+
+    data.DC.forEach((node, index) => {
+      const coefficients =
+        nodeNetRow(node);
+
+      Object.keys(coefficients).forEach(
+        key => {
+          coefficients[key] *= -1;
+        }
+      );
+
+      addEquality(
+        `demand_${index}`,
+        coefficients,
+        data.demand[index]
+      );
+    });
+
+    for (const node of ["LC", "ICD"]) {
+      const exists =
+        arcs.some(
+          arc =>
+            arc.From === node ||
+            arc.To === node
+        );
+
+      if (exists) {
+        addEquality(
+          `conservation_${node}`,
+          nodeNetRow(node),
+          0
+        );
+      }
+    }
+
+    if (params.exportDemand > 0) {
+      const coefficients = {};
+
+      arcs.forEach((arc, index) => {
+        if (
+          arc.IsExport === 1 &&
+          arc.To === "PORT"
+        ) {
+          coefficients[xNames[index]] = 1;
+        }
+      });
+
+      if (
+        Object.keys(coefficients).length === 0
+      ) {
+        throw new Error(
+          "exportDemand > 0, but no enabled export arc into PORT exists."
+        );
+      }
+
+      if (params.ExportRule === 2) {
+        addEquality(
+          "export_fixed",
+          coefficients,
+          params.exportDemand
+        );
+      } else {
+        addLower(
+          "export_minimum",
+          coefficients,
+          params.exportDemand
+        );
+      }
+    }
+
+    addNodeCap("LC", params.KL);
+    addNodeCap("ICD", params.KICD);
+    addNodeCap("PORT", params.KPORT);
+
+    addNodeFlowControls("LC");
+    addNodeFlowControls("ICD");
+    addNodeFlowControls("PORT");
+
+    addModeCap("Road", params.K_road);
+    addModeCap("Rail", params.K_rail);
+    addModeCap("Water", params.K_water);
+    addModeCap("Sea", params.K_sea);
+
+    if (
+      Number.isFinite(params.Emax)
+    ) {
+      const coefficients = {};
+
+      arcs.forEach((arc, index) => {
+        coefficients[xNames[index]] =
+          emissionFactor[index];
+      });
+
+      addUpper(
+        "emission_cap",
+        coefficients,
+        params.Emax
+      );
+    }
+
+    arcs.forEach((arc, index) => {
+      const cap =
+        Number.isFinite(arc.Cap) &&
+        arc.Cap > 0
+          ? arc.Cap
+          : Infinity;
+
+      if (Number.isFinite(cap)) {
+        bounds.push({
+          name: xNames[index],
+          type: glpk.GLP_DB,
+          lb: 0,
+          ub: cap
+        });
+      } else {
+        bounds.push({
+          name: xNames[index],
+          type: glpk.GLP_LO,
+          lb: 0,
+          ub: 0
+        });
+      }
+
+      bounds.push({
+        name: yNames[index],
+        type: glpk.GLP_DB,
+        lb: 0,
+        ub: 1
+      });
+
+      const bigM =
+        Number.isFinite(cap)
+          ? cap
+          : Math.max(
+              params.BigM,
+              sum(data.supply)
+            );
+
+      addUpper(
+        `activation_${index}`,
+        {
+          [xNames[index]]: 1,
+          [yNames[index]]: -bigM
+        },
+        0
+      );
+    });
+
+    function addNodeCap(
+      node,
+      capacity
+    ) {
+      if (!Number.isFinite(capacity)) {
+        return;
+      }
+
+      const coefficients = {};
+
+      arcs.forEach((arc, index) => {
+        if (arc.To === node) {
+          coefficients[xNames[index]] = 1;
+        }
+      });
+
+      addUpper(
+        `node_cap_${node}`,
+        coefficients,
+        capacity
+      );
+    }
+
+    function addNodeFlowControls(node) {
+      const exists =
+        arcs.some(
+          arc =>
+            arc.From === node ||
+            arc.To === node
+        );
+
+      if (!exists) {
+        return;
+      }
+
+      const fixValue =
+        params[`${node}_FixFlow`];
+
+      const minValue =
+        params[`${node}_MinFlow`];
+
+      const maxValue =
+        params[`${node}_MaxFlow`];
+
+      const flowType =
+        Number(
+          params[`${node}_FlowType`]
+        );
+
+      const coefficients = {};
+
+      arcs.forEach((arc, index) => {
+        if (
+          (flowType === 1 ||
+           flowType === 3) &&
+          arc.To === node
+        ) {
+          coefficients[xNames[index]] =
+            (coefficients[xNames[index]] || 0) +
+            1;
+        }
+
+        if (
+          (flowType === 2 ||
+           flowType === 3) &&
+          arc.From === node
+        ) {
+          coefficients[xNames[index]] =
+            (coefficients[xNames[index]] || 0) +
+            1;
+        }
+      });
+
+      if (Number.isFinite(fixValue)) {
+        addEquality(
+          `node_flow_fix_${node}`,
+          coefficients,
+          fixValue
+        );
+      } else {
+        if (Number.isFinite(minValue)) {
+          addLower(
+            `node_flow_min_${node}`,
+            coefficients,
+            minValue
+          );
+        }
+
+        if (Number.isFinite(maxValue)) {
+          addUpper(
+            `node_flow_max_${node}`,
+            coefficients,
+            maxValue
+          );
+        }
+      }
+    }
+
+    function addModeCap(
+      mode,
+      capacity
+    ) {
+      if (!Number.isFinite(capacity)) {
+        return;
+      }
+
+      const coefficients = {};
+
+      arcs.forEach((arc, index) => {
+        if (arc.Mode === mode) {
+          coefficients[xNames[index]] = 1;
+        }
+      });
+
+      addUpper(
+        `mode_cap_${mode}`,
+        coefficients,
+        capacity
+      );
+    }
+
+    const lp = {
+      name:
+        useMIP
+          ? "LogisticsHub_MIP"
+          : "LogisticsHub_LP",
+      objective: {
+        direction: glpk.GLP_MIN,
+        name: "TotalCost",
+        vars: objectiveVars
+      },
+      subjectTo,
+      bounds
+    };
+
+    if (useMIP) {
+      lp.binaries = [...yNames];
+    }
+
+    const solution =
+      await glpk.solve(
+        lp,
+        {
+          msglev: glpk.GLP_MSG_ERR,
+          presol: true,
+          tmlim: 60,
+          mipgap: 0
+        }
+      );
+
+    const status =
+      solution.result.status;
+
+    if (
+      ![
+        glpk.GLP_OPT,
+        glpk.GLP_FEAS
+      ].includes(status)
+    ) {
+      const statusText = {
+        [glpk.GLP_UNDEF]: "undefined",
+        [glpk.GLP_INFEAS]: "infeasible",
+        [glpk.GLP_NOFEAS]:
+          "no feasible solution",
+        [glpk.GLP_UNBND]: "unbounded"
+      }[status] ?? String(status);
+
+      throw new Error(
+        `GLPK did not return a feasible solution: ${statusText}.`
+      );
+    }
+
+    const variables =
+      solution.result.vars;
+
+    const x =
+      xNames.map(
+        name => variables[name] || 0
+      );
+
+    const y =
+      yNames.map(
+        name => variables[name] || 0
+      );
+
+    const resultRows = [];
+
+    arcs.forEach((arc, index) => {
+      if (x[index] <= 1e-7) {
+        return;
+      }
+
+      const arcCost =
+        x[index] *
+          (
+            effectiveCost[index] +
+            params.lambdaCO2 *
+            emissionFactor[index]
+          ) +
+        y[index] *
+          arc.FixedCost;
+
+      resultRows.push({
+        From: arc.From,
+        To: arc.To,
+        Mode: arc.Mode,
+        Flow: x[index],
+        OpenY: y[index],
+        Distance: distance[index],
+        UnitCost: effectiveCost[index],
+        FixedCost: arc.FixedCost,
+        ArcCost: arcCost,
+        IsExport: arc.IsExport,
+        Cap:
+          Number.isFinite(arc.Cap) &&
+          arc.Cap > 0
+            ? arc.Cap
+            : Infinity,
+        CO2:
+          x[index] *
+          emissionFactor[index],
+        TonKM:
+          x[index] *
+          distance[index]
+      });
+    });
+
+    resultRows.sort(
+      (a, b) =>
+        b.ArcCost -
+        a.ArcCost
+    );
+
+    const exportIndices =
+      arcs.map(
+        (arc, index) =>
+          arc.IsExport === 1 &&
+          arc.To === "PORT"
+            ? index
+            : -1
+      ).filter(
+        index => index >= 0
+      );
+
+    const exportFlow =
+      sum(
+        exportIndices.map(
+          index => x[index]
+        )
+      );
+
+    const exportGap =
+      exportFlow -
+      params.exportDemand;
+
+    if (
+      params.exportDemand > 0 &&
+      params.ExportRule === 2 &&
+      Math.abs(exportGap) > 1e-5
+    ) {
+      throw new Error(
+        `Export verification failed: ExportFlow=${formatNumber(exportFlow)} differs from exportDemand=${formatNumber(params.exportDemand)}.`
+      );
+    }
+
+    const nodeFlows = {};
+    const nodeFlowOptions = {};
+
+    for (const node of [
+      "LC",
+      "ICD",
+      "PORT"
+    ]) {
+      const inflow =
+        sum(
+          arcs.map(
+            (arc, index) =>
+              arc.To === node
+                ? x[index]
+                : 0
+          )
+        );
+
+      const outflow =
+        sum(
+          arcs.map(
+            (arc, index) =>
+              arc.From === node
+                ? x[index]
+                : 0
+          )
+        );
+
+      nodeFlows[node] = {
+        Node: node,
+        Inflow: inflow,
+        Outflow: outflow,
+        Throughput:
+          inflow + outflow,
+        Net:
+          inflow - outflow,
+        Exists:
+          arcs.some(
+            arc =>
+              arc.From === node ||
+              arc.To === node
+          )
+      };
+
+      nodeFlowOptions[node] = {
+        Fix:
+          params[`${node}_FixFlow`],
+        Min:
+          params[`${node}_MinFlow`],
+        Max:
+          params[`${node}_MaxFlow`],
+        Type:
+          params[`${node}_FlowType`]
+      };
+    }
+
+    const nodeFlowTable =
+      ["LC", "ICD", "PORT"].map(
+        node => {
+          const flow =
+            nodeFlows[node];
+
+          const option =
+            nodeFlowOptions[node];
+
+          const constraint =
+            optionText(option);
+
+          return {
+            Node: node,
+            Inflow: flow.Inflow,
+            Outflow: flow.Outflow,
+            Throughput:
+              flow.Throughput,
+            Net: flow.Net,
+            FlowType:
+              flowTypeText(option.Type),
+            ConstraintType:
+              constraint.type,
+            ConstraintValue:
+              constraint.value
+          };
+        }
+      );
+
+    const nodeFlowDiagnostic =
+      ["LC", "ICD", "PORT"].map(
+        node => {
+          const inbound =
+            arcs.map(
+              (arc, index) => ({
+                arc,
+                index
+              })
+            ).filter(
+              item =>
+                item.arc.To === node
+            );
+
+          const outbound =
+            arcs.map(
+              (arc, index) => ({
+                arc,
+                index
+              })
+            ).filter(
+              item =>
+                item.arc.From === node
+            );
+
+          return {
+            Node: node,
+            OptimizedInflow:
+              sum(
+                inbound.map(
+                  item => x[item.index]
+                )
+              ),
+            OptimizedOutflow:
+              sum(
+                outbound.map(
+                  item => x[item.index]
+                )
+              ),
+            OptimizedThroughput:
+              nodeFlows[node].Throughput,
+            CandidateInCapacity:
+              sum(
+                inbound.map(
+                  item =>
+                    Number.isFinite(
+                      item.arc.Cap
+                    )
+                      ? item.arc.Cap
+                      : 0
+                )
+              ),
+            CandidateOutCapacity:
+              sum(
+                outbound.map(
+                  item =>
+                    Number.isFinite(
+                      item.arc.Cap
+                    )
+                      ? item.arc.Cap
+                      : 0
+                )
+              ),
+            ParamNodeCapacity:
+              node === "LC"
+                ? params.KL
+                : node === "ICD"
+                  ? params.KICD
+                  : params.KPORT,
+            EnabledInboundArcs:
+              inbound.length,
+            EnabledOutboundArcs:
+              outbound.length,
+            UsedInboundArcs:
+              inbound.filter(
+                item =>
+                  x[item.index] > 1e-7
+              ).length,
+            UsedOutboundArcs:
+              outbound.filter(
+                item =>
+                  x[item.index] > 1e-7
+              ).length,
+            ExportInflow:
+              sum(
+                inbound.map(
+                  item =>
+                    item.arc.IsExport === 1
+                      ? x[item.index]
+                      : 0
+                )
+              )
+          };
+        }
+      );
+
+    const modeSummary =
+      ["Road", "Rail", "Water", "Sea"].map(
+        mode => {
+          const indices =
+            arcs.map(
+              (arc, index) =>
+                arc.Mode === mode
+                  ? index
+                  : -1
+            ).filter(
+              index => index >= 0
+            );
+
+          return {
+            Mode: mode,
+            Flow:
+              sum(
+                indices.map(
+                  index => x[index]
+                )
+              ),
+            TonKM:
+              sum(
+                indices.map(
+                  index =>
+                    x[index] *
+                    distance[index]
+                )
+              ),
+            CO2:
+              sum(
+                indices.map(
+                  index =>
+                    x[index] *
+                    emissionFactor[index]
+                )
+              )
+          };
+        }
+      );
+
+    const totalModalFlow =
+      sum(
+        modeSummary.map(
+          row => row.Flow
+        )
+      );
+
+    modeSummary.forEach(row => {
+      row.ShareFlow =
+        totalModalFlow > 1e-12
+          ? row.Flow /
+            totalModalFlow
+          : 0;
+    });
+
+    const transportCost =
+      sum(
+        x.map(
+          (value, index) =>
+            value *
+            effectiveCost[index]
+        )
+      );
+
+    const fixedCost =
+      sum(
+        y.map(
+          (value, index) =>
+            value *
+            arcs[index].FixedCost
+        )
+      );
+
+    const totalCO2 =
+      sum(
+        x.map(
+          (value, index) =>
+            value *
+            emissionFactor[index]
+        )
+      );
+
+    const co2Cost =
+      params.lambdaCO2 *
+      totalCO2;
+
+    const totalCost =
+      solution.result.z;
+
+    const costSummary = [
+      {
+        Metric: "TransportCost",
+        Value: transportCost
+      },
+      {
+        Metric: "FixedCost",
+        Value: fixedCost
+      },
+      {
+        Metric: "CO2Cost",
+        Value: co2Cost
+      },
+      {
+        Metric: "TotalCost",
+        Value: totalCost
+      },
+      {
+        Metric: "TotalCO2",
+        Value: totalCO2
+      },
+      {
+        Metric: "UsedArcs",
+        Value:
+          x.filter(
+            value => value > 1e-7
+          ).length
+      },
+      {
+        Metric: "OpenedY",
+        Value:
+          useMIP
+            ? y.filter(
+                value => value > 0.5
+              ).length
+            : sum(y)
+      },
+      {
+        Metric: "ExportFlow",
+        Value: exportFlow
+      },
+      {
+        Metric:
+          "RequiredExportDemand",
+        Value:
+          params.exportDemand
+      },
+      {
+        Metric: "KPORT",
+        Value: params.KPORT
+      },
+      {
+        Metric:
+          "PortUtilization",
+        Value:
+          Number.isFinite(
+            params.KPORT
+          ) &&
+          params.KPORT > 0
+            ? exportFlow /
+              params.KPORT
+            : NaN
+      }
+    ];
+
+    return {
+      totalCost,
+      x,
+      y,
+      T: arcs,
+      Tall: data.ArcsAll,
+      tableData: resultRows,
+      ef: emissionFactor,
+      effectiveCost,
+      distance,
+      requiredExportDemand:
+        params.exportDemand,
+      exportFlow,
+      KPORT: params.KPORT,
+      exportGap,
+      nodeFlows,
+      nodeFlowOptions,
+      nodeFlowTable,
+      nodeFlowDiagnostic,
+      modeSummary,
+      costSummary,
+      glpkStatus: status,
+      glpkTime: solution.time,
+      useMIP
+    };
+  }
+
+  function optionText(option) {
+    if (Number.isFinite(option.Fix)) {
+      return {
+        type: "FixFlow",
+        value:
+          formatNumber(option.Fix)
+      };
+    }
+
+    if (
+      Number.isFinite(option.Min) &&
+      Number.isFinite(option.Max)
+    ) {
+      return {
+        type: "Min-Max",
+        value:
+          `[${formatNumber(option.Min)}, ${formatNumber(option.Max)}]`
+      };
+    }
+
+    if (Number.isFinite(option.Min)) {
+      return {
+        type: "MinFlow",
+        value:
+          formatNumber(option.Min)
+      };
+    }
+
+    if (Number.isFinite(option.Max)) {
+      return {
+        type: "MaxFlow",
+        value:
+          formatNumber(option.Max)
+      };
+    }
+
+    return {
+      type: "None",
+      value: ""
+    };
+  }
+
+  function flowTypeText(value) {
+    return {
+      1: "Inflow",
+      2: "Outflow",
+      3: "Throughput"
+    }[Number(value)] ?? "Unknown";
+  }
+
+  // ==========================================================
+  // RESULTS TABLE AND MODAL SPLIT
+  // ==========================================================
+
+  function updateResultsTable(result) {
+    resultsBody.innerHTML = "";
+
+    for (const row of result.tableData) {
+      const tr =
+        document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${escapeHtml(row.From)}</td>
+        <td>${escapeHtml(row.To)}</td>
+        <td>${escapeHtml(row.Mode)}</td>
+        <td>${formatNumber(row.Flow)}</td>
+        <td>${formatNumber(row.OpenY)}</td>
+        <td>${formatNumber(row.Distance)}</td>
+        <td>${formatNumber(row.UnitCost)}</td>
+        <td>${formatNumber(row.FixedCost)}</td>
+        <td>${formatNumber(row.ArcCost)}</td>
+        <td>${row.IsExport}</td>
+        <td>${numberOrText(row.Cap)}</td>
+        <td>${formatNumber(row.CO2)}</td>
+        <td>${formatNumber(row.TonKM)}</td>
+      `;
+
+      resultsBody.appendChild(tr);
+    }
+  }
+
+  function updateModalSplit(result) {
+    const total =
+      sum(result.x);
+
+    const shares = {
+      Road: 0,
+      Rail: 0,
+      Water: 0,
+      Sea: 0
+    };
+
+    result.T.forEach((arc, index) => {
+      shares[arc.Mode] +=
+        result.x[index];
+    });
+
+    document
+      .getElementById("modalRoad")
+      .textContent =
+        `Road: ${percent(shares.Road, total)}`;
+
+    document
+      .getElementById("modalRail")
+      .textContent =
+        `Rail: ${percent(shares.Rail, total)}`;
+
+    document
+      .getElementById("modalWater")
+      .textContent =
+        `Waterway: ${percent(shares.Water, total)}`;
+
+    document
+      .getElementById("modalSea")
+      .textContent =
+        `Sea: ${percent(shares.Sea, total)}`;
+  }
+
+  function percent(value, total) {
+    return total > 1e-12
+      ? `${(100 * value / total).toFixed(1)}%`
+      : "0.0%";
+  }
+
+  // ==========================================================
+  // NETWORK DRAWING
+  // ==========================================================
+
+  function drawNetwork(result) {
+    const context = networkContext;
+    const width = networkCanvas.width;
+    const height = networkCanvas.height;
+
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+
+    context.fillStyle = "#111827";
+    context.font = "bold 16px Arial";
+    context.textAlign = "center";
+
+    context.fillText(
+      "Network – solid used arcs; dashed closed candidates",
+      width / 2,
+      24
+    );
+
+    if (!state.data) {
+      context.fillStyle = "#667085";
+      context.font = "18px Arial";
+
+      context.fillText(
+        "Import an Excel workbook to display the network.",
+        width / 2,
+        height / 2
+      );
+
+      return;
+    }
+
+    const allCandidateArcs =
+      state.data.ArcsAll.filter(
+        arc => arc.Enabled === 1
+      );
+
+    const nodes =
+      new Set();
+
+    if (result) {
+      result.T.forEach((arc, index) => {
+        if (
+          result.x[index] > 1e-7
+        ) {
+          nodes.add(arc.From);
+          nodes.add(arc.To);
+        }
+      });
+    }
+
+    if (showClosed.checked || !result) {
+      allCandidateArcs.forEach(arc => {
+        nodes.add(arc.From);
+        nodes.add(arc.To);
+      });
+    }
+
+    const nodeArray =
+      [...nodes];
+
+    if (nodeArray.length === 0) {
+      return;
+    }
+
+    const groups = {
+      IP:
+        nodeArray
+          .filter(
+            node => node.startsWith("IP")
+          )
+          .sort(),
+      MID:
+        nodeArray
+          .filter(
+            node =>
+              node === "LC" ||
+              node === "ICD"
+          )
+          .sort(),
+      OTHER:
+        nodeArray
+          .filter(
+            node =>
+              !node.startsWith("IP") &&
+              !node.startsWith("DC") &&
+              node !== "LC" &&
+              node !== "ICD" &&
+              node !== "PORT"
+          )
+          .sort(),
+      DC:
+        nodeArray
+          .filter(
+            node => node.startsWith("DC")
+          )
+          .sort(),
+      PORT:
+        nodeArray.filter(
+          node => node === "PORT"
+        )
+    };
+
+    const positions = new Map();
+
+    assignColumn(
+      groups.IP,
+      75,
+      85,
+      height - 80
+    );
+
+    assignColumn(
+      groups.MID,
+      width * 0.34,
+      145,
+      height - 115
+    );
+
+    assignColumn(
+      groups.OTHER,
+      width * 0.51,
+      170,
+      height - 120
+    );
+
+    assignColumn(
+      groups.DC,
+      width * 0.70,
+      85,
+      height - 80
+    );
+
+    assignColumn(
+      groups.PORT,
+      width - 100,
+      height * 0.52,
+      height * 0.52
+    );
+
+    function assignColumn(
+      group,
+      x,
+      top,
+      bottom
+    ) {
+      if (group.length === 0) {
+        return;
+      }
+
+      group.forEach((node, index) => {
+        const y =
+          group.length === 1
+            ? (top + bottom) / 2
+            : top +
+              index *
+              (bottom - top) /
+              (group.length - 1);
+
+        positions.set(node, {
+          x,
+          y
+        });
+      });
+    }
+
+    const usedKeys =
+      new Set();
+
+    if (result) {
+      result.T.forEach((arc, index) => {
+        if (
+          result.x[index] > 1e-7
+        ) {
+          usedKeys.add(
+            arcKey(arc)
+          );
+        }
+      });
+    }
+
+    if (showClosed.checked) {
+      context.save();
+      context.strokeStyle = "#c1c7d0";
+      context.lineWidth = 1.4;
+      context.setLineDash([7, 5]);
+
+      for (const arc of allCandidateArcs) {
+        if (usedKeys.has(arcKey(arc))) {
+          continue;
+        }
+
+        drawArcLine(
+          context,
+          positions,
+          arc,
+          "#c1c7d0",
+          1.4,
+          true
+        );
+      }
+
+      context.restore();
+    }
+
+    if (result) {
+      result.T.forEach((arc, index) => {
+        if (
+          result.x[index] <= 1e-7
+        ) {
+          return;
+        }
+
+        drawArcLine(
+          context,
+          positions,
+          arc,
+          modeColors[arc.Mode] || "#111827",
+          3,
+          false,
+          result.x[index]
+        );
+      });
+    }
+
+    for (const [node, position] of positions) {
+      drawNode(
+        context,
+        node,
+        position
+      );
+    }
+  }
+
+  function drawArcLine(
+    context,
+    positions,
+    arc,
+    color,
+    width,
+    dashed,
+    flow = null
+  ) {
+    const from =
+      positions.get(arc.From);
+
+    const to =
+      positions.get(arc.To);
+
+    if (!from || !to) {
+      return;
+    }
+
+    context.save();
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = width;
+
+    if (dashed) {
+      context.setLineDash([7, 5]);
+    } else {
+      context.setLineDash([]);
+    }
+
+    const dx =
+      to.x - from.x;
+
+    const dy =
+      to.y - from.y;
+
+    const length =
+      Math.sqrt(dx * dx + dy * dy) || 1;
+
+    const ux = dx / length;
+    const uy = dy / length;
+
+    const start = {
+      x: from.x + ux * 20,
+      y: from.y + uy * 20
+    };
+
+    const end = {
+      x: to.x - ux * 22,
+      y: to.y - uy * 22
+    };
+
+    context.beginPath();
+    context.moveTo(
+      start.x,
+      start.y
+    );
+    context.lineTo(
+      end.x,
+      end.y
+    );
+    context.stroke();
+
+    const angle =
+      Math.atan2(
+        end.y - start.y,
+        end.x - start.x
+      );
+
+    const head = 8;
+
+    context.beginPath();
+    context.moveTo(
+      end.x,
+      end.y
+    );
+
+    context.lineTo(
+      end.x -
+        head *
+        Math.cos(
+          angle - Math.PI / 6
+        ),
+      end.y -
+        head *
+        Math.sin(
+          angle - Math.PI / 6
+        )
+    );
+
+    context.lineTo(
+      end.x -
+        head *
+        Math.cos(
+          angle + Math.PI / 6
+        ),
+      end.y -
+        head *
+        Math.sin(
+          angle + Math.PI / 6
+        )
+    );
+
+    context.closePath();
+    context.fill();
+
+    if (
+      flow !== null &&
+      Number.isFinite(flow)
+    ) {
+      const midpoint = {
+        x:
+          (start.x + end.x) / 2,
+        y:
+          (start.y + end.y) / 2
+      };
+
+      const text =
+        formatNumber(flow);
+
+      context.font =
+        "10px Arial";
+
+      const metrics =
+        context.measureText(text);
+
+      context.fillStyle =
+        "rgba(255,255,255,0.92)";
+
+      context.fillRect(
+        midpoint.x -
+          metrics.width / 2 -
+          3,
+        midpoint.y - 9,
+        metrics.width + 6,
+        15
+      );
+
+      context.fillStyle =
+        "#111827";
+
+      context.textAlign =
+        "center";
+
+      context.fillText(
+        text,
+        midpoint.x,
+        midpoint.y + 2
+      );
+    }
+
+    context.restore();
+  }
+
+  function drawNode(
+    context,
+    node,
+    position
+  ) {
+    let fill = "#ffffff";
+    let shape = "circle";
+
+    if (node.startsWith("IP")) {
+      fill = "#e5e7eb";
+    } else if (node.startsWith("DC")) {
+      fill = "#dbeafe";
+    } else if (node === "LC") {
+      fill = "#dcfce7";
+      shape = "diamond";
+    } else if (node === "ICD") {
+      fill = "#fee2e2";
+      shape = "diamond";
+    } else if (node === "PORT") {
+      fill = "#fef3c7";
+      shape = "square";
+    }
+
+    context.save();
+    context.fillStyle = fill;
+    context.strokeStyle = "#334155";
+    context.lineWidth = 1.5;
+
+    if (shape === "diamond") {
+      context.beginPath();
+      context.moveTo(
+        position.x,
+        position.y - 18
+      );
+      context.lineTo(
+        position.x + 18,
+        position.y
+      );
+      context.lineTo(
+        position.x,
+        position.y + 18
+      );
+      context.lineTo(
+        position.x - 18,
+        position.y
+      );
+      context.closePath();
+      context.fill();
+      context.stroke();
+    } else if (shape === "square") {
+      context.fillRect(
+        position.x - 17,
+        position.y - 17,
+        34,
+        34
+      );
+      context.strokeRect(
+        position.x - 17,
+        position.y - 17,
+        34,
+        34
+      );
+    } else {
+      context.beginPath();
+      context.arc(
+        position.x,
+        position.y,
+        17,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
+      context.stroke();
+    }
+
+    context.fillStyle = "#111827";
+    context.font = "11px Arial";
+    context.textAlign = "left";
+
+    context.fillText(
+      node,
+      position.x + 22,
+      position.y + 4
+    );
+
+    context.restore();
+  }
+
+  function arcKey(arc) {
+    return `${arc.From}->${arc.To}|${arc.Mode}`;
+  }
+
+  // ==========================================================
+  // KPI CHARTS
+  // ==========================================================
+
+  kpiButton.addEventListener("click", () => {
+    if (!state.res) {
+      return;
+    }
+
+    updateKPI(state.res);
+    openTab("kpiTab");
+  });
+
+  function destroyChart(name) {
+    if (charts[name]) {
+      charts[name].destroy();
+      charts[name] = null;
+    }
+  }
+
+  function updateKPI(result) {
+    updateCostChart(result);
+    updateModeFlowChart(result);
+    updateModeImpactChart(result);
+    updateNodeFlowChart(result);
+    updatePortChart(result);
+  }
+
+  function updateCostChart(result) {
+    destroyChart("cost");
+
+    const metrics = [
+      "TransportCost",
+      "FixedCost",
+      "CO2Cost",
+      "TotalCost"
+    ];
+
+    charts.cost = new Chart(
+      document.getElementById("costChart"),
+      {
+        type: "bar",
+        data: {
+          labels: metrics,
+          datasets: [{
+            label:
+              result.solverName ||
+              "Solution",
+            data:
+              metrics.map(
+                metric =>
+                  summaryValue(
+                    result.costSummary,
+                    metric
+                  )
+              )
+          }]
+        },
+        options:
+          categoryChartOptions(
+            "Metric",
+            "Value"
+          )
+      }
+    );
+  }
+
+  function updateModeFlowChart(result) {
+    destroyChart("modeFlow");
+
+    charts.modeFlow = new Chart(
+      document.getElementById("modeFlowChart"),
+      {
+        type: "bar",
+        data: {
+          labels:
+            result.modeSummary.map(
+              row => row.Mode
+            ),
+          datasets: [{
+            label: "Flow",
+            data:
+              result.modeSummary.map(
+                row => row.Flow
+              ),
+            backgroundColor:
+              result.modeSummary.map(
+                row =>
+                  modeColors[row.Mode]
+              )
+          }]
+        },
+        options:
+          categoryChartOptions(
+            "Mode",
+            "Flow"
+          )
+      }
+    );
+  }
+
+  function updateModeImpactChart(result) {
+    destroyChart("modeImpact");
+
+    charts.modeImpact = new Chart(
+      document.getElementById("modeImpactChart"),
+      {
+        type: "bar",
+        data: {
+          labels:
+            result.modeSummary.map(
+              row => row.Mode
+            ),
+          datasets: [
+            {
+              label: "TonKM",
+              data:
+                result.modeSummary.map(
+                  row => row.TonKM
+                )
+            },
+            {
+              label: "CO₂",
+              data:
+                result.modeSummary.map(
+                  row => row.CO2
+                )
+            }
+          ]
+        },
+        options:
+          categoryChartOptions(
+            "Mode",
+            "Value"
+          )
+      }
+    );
+  }
+
+  function updateNodeFlowChart(result) {
+    destroyChart("nodeFlow");
+
+    charts.nodeFlow = new Chart(
+      document.getElementById("nodeFlowChart"),
+      {
+        type: "bar",
+        data: {
+          labels:
+            result.nodeFlowTable.map(
+              row => row.Node
+            ),
+          datasets: [
+            {
+              label: "Inflow",
+              data:
+                result.nodeFlowTable.map(
+                  row => row.Inflow
+                )
+            },
+            {
+              label: "Outflow",
+              data:
+                result.nodeFlowTable.map(
+                  row => row.Outflow
+                )
+            }
+          ]
+        },
+        options:
+          categoryChartOptions(
+            "Node",
+            "Optimized flow"
+          )
+      }
+    );
+  }
+
+  function updatePortChart(result) {
+    destroyChart("port");
+
+    const values =
+      Number.isFinite(result.KPORT)
+        ? [
+            result.exportFlow,
+            result.KPORT
+          ]
+        : [
+            result.exportFlow
+          ];
+
+    const labels =
+      Number.isFinite(result.KPORT)
+        ? [
+            "ExportFlow",
+            "KPORT"
+          ]
+        : [
+            "ExportFlow"
+          ];
+
+    charts.port = new Chart(
+      document.getElementById("portChart"),
+      {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label:
+              Number.isFinite(result.KPORT)
+                ? `Port utilization ${(100 * result.exportFlow / result.KPORT).toFixed(1)}%`
+                : "KPORT not set",
+            data: values
+          }]
+        },
+        options:
+          categoryChartOptions(
+            "PORT KPI",
+            "Flow / capacity"
+          )
+      }
+    );
+  }
+
+  function categoryChartOptions(
+    xLabel,
+    yLabel
+  ) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: xLabel
+          }
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: yLabel
+          }
+        }
+      }
+    };
+  }
+
+  function summaryValue(
+    summary,
+    metric
+  ) {
+    return summary.find(
+      row => row.Metric === metric
+    )?.Value ?? NaN;
+  }
+
+  // ==========================================================
+  // LP-MIP COMPARISON
+  // ==========================================================
+
+  compareButton.addEventListener("click", async () => {
+    try {
+      if (!state.data) {
+        throw new Error(
+          "Import Excel first."
+        );
+      }
+
+      if (!state.resLP) {
+        state.resLP =
+          await solveAndDisplay(
+            false,
+            "LP relaxation"
+          );
+      }
+
+      if (!state.resMIP) {
+        state.resMIP =
+          await solveAndDisplay(
+            true,
+            "MIP"
+          );
+      }
+
+      updateComparison();
+      openTab("compareTab");
+
+      setStatus(
+        "LP–MIP comparison generated.",
+        "success"
+      );
+    } catch (error) {
+      setStatus(
+        `Comparison error: ${error.message}`,
+        "error"
+      );
+    }
+  });
+
+  function updateComparison() {
+    if (
+      !state.resLP ||
+      !state.resMIP
+    ) {
+      return;
+    }
+
+    const lp = state.resLP;
+    const mip = state.resMIP;
+
+    createComparisonChart(
+      "compareCost",
+      "compareCostChart",
+      [
+        "TotalCost",
+        "TransportCost",
+        "FixedCost",
+        "CO2Cost"
+      ],
+      metric =>
+        summaryValue(
+          lp.costSummary,
+          metric
+        ),
+      metric =>
+        summaryValue(
+          mip.costSummary,
+          metric
+        ),
+      "Value"
+    );
+
+    createComparisonChart(
+      "compareNetwork",
+      "compareNetworkChart",
+      [
+        "TotalCO2",
+        "UsedArcs",
+        "OpenedY"
+      ],
+      metric =>
+        summaryValue(
+          lp.costSummary,
+          metric
+        ),
+      metric =>
+        summaryValue(
+          mip.costSummary,
+          metric
+        ),
+      "Value"
+    );
+
+    createComparisonChart(
+      "compareModeFlow",
+      "compareModeFlowChart",
+      [
+        "Road",
+        "Rail",
+        "Water",
+        "Sea"
+      ],
+      mode =>
+        lp.modeSummary.find(
+          row => row.Mode === mode
+        )?.Flow ?? 0,
+      mode =>
+        mip.modeSummary.find(
+          row => row.Mode === mode
+        )?.Flow ?? 0,
+      "Flow"
+    );
+
+    createComparisonChart(
+      "compareModeShare",
+      "compareModeShareChart",
+      [
+        "Road",
+        "Rail",
+        "Water",
+        "Sea"
+      ],
+      mode =>
+        100 *
+        (
+          lp.modeSummary.find(
+            row => row.Mode === mode
+          )?.ShareFlow ?? 0
+        ),
+      mode =>
+        100 *
+        (
+          mip.modeSummary.find(
+            row => row.Mode === mode
+          )?.ShareFlow ?? 0
+        ),
+      "Share (%)"
+    );
+  }
+
+  function createComparisonChart(
+    chartName,
+    canvasId,
+    labels,
+    lpValue,
+    mipValue,
+    yLabel
+  ) {
+    destroyChart(chartName);
+
+    charts[chartName] =
+      new Chart(
+        document.getElementById(canvasId),
+        {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              {
+                label:
+                  "LP relaxation",
+                data:
+                  labels.map(lpValue)
+              },
+              {
+                label: "MIP",
+                data:
+                  labels.map(mipValue)
+              }
+            ]
+          },
+          options:
+            categoryChartOptions(
+              "Metric",
+              yLabel
+            )
+        }
+      );
+  }
+
+  // ==========================================================
+  // DASHBOARD
+  // ==========================================================
+
+  dashboardButton.addEventListener("click", () => {
+    if (!state.res) {
+      return;
+    }
+
+    updateDashboard();
+    openTab("dashboardTab");
+  });
+
+  function updateDashboard() {
+    const result =
+      state.resMIP ||
+      state.res ||
+      state.resLP;
+
+    if (!result) {
+      return;
+    }
+
+    const cards = [
+      [
+        "Solver",
+        result.solverName || "Solution"
+      ],
+      [
+        "Total Cost",
+        formatNumber(result.totalCost)
+      ],
+      [
+        "Total CO₂",
+        formatNumber(
+          summaryValue(
+            result.costSummary,
+            "TotalCO2"
+          )
+        )
+      ],
+      [
+        "Used Arcs",
+        formatNumber(
+          summaryValue(
+            result.costSummary,
+            "UsedArcs"
+          )
+        )
+      ],
+      [
+        "Export Flow",
+        `${formatNumber(result.exportFlow)} / ${formatNumber(result.requiredExportDemand)}`
+      ]
+    ];
+
+    document
+      .getElementById("dashboardCards")
+      .innerHTML =
+        cards.map(
+          ([label, value]) => `
+            <div class="kpi-card">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+            </div>
+          `
+        ).join("");
+
+    destroyChart("dashboardMain");
+
+    charts.dashboardMain =
+      new Chart(
+        document.getElementById("dashboardMainChart"),
+        {
+          type: "bar",
+          data: {
+            labels: [
+              "TotalCost",
+              "TotalCO2"
+            ],
+            datasets: [{
+              label:
+                result.solverName ||
+                "Solution",
+              data: [
+                result.totalCost,
+                summaryValue(
+                  result.costSummary,
+                  "TotalCO2"
+                )
+              ]
+            }]
+          },
+          options:
+            categoryChartOptions(
+              "KPI",
+              "Value"
+            )
+        }
+      );
+
+    destroyChart("dashboardMode");
+
+    charts.dashboardMode =
+      new Chart(
+        document.getElementById("dashboardModeChart"),
+        {
+          type: "doughnut",
+          data: {
+            labels:
+              result.modeSummary.map(
+                row => row.Mode
+              ),
+            datasets: [{
+              data:
+                result.modeSummary.map(
+                  row =>
+                    100 *
+                    row.ShareFlow
+                ),
+              backgroundColor:
+                result.modeSummary.map(
+                  row =>
+                    modeColors[row.Mode]
+                )
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false
+          }
+        }
+      );
+  }
+
+  // ==========================================================
+  // EXCEL EXPORT
+  // ==========================================================
+
+  exportExcelButton.addEventListener("click", () => {
+    try {
+      if (!state.res || !state.data) {
+        throw new Error(
+          "Solve LP or MIP first."
+        );
+      }
+
+      const workbook =
+        XLSX.utils.book_new();
+
+      appendJsonSheet(
+        workbook,
+        state.res.tableData,
+        "ArcResults"
+      );
+
+      appendJsonSheet(
+        workbook,
+        state.res.nodeFlowTable,
+        "NodeFlows"
+      );
+
+      appendJsonSheet(
+        workbook,
+        state.res.nodeFlowDiagnostic,
+        "NodeFlowDiagnostic"
+      );
+
+      appendJsonSheet(
+        workbook,
+        state.res.modeSummary,
+        "ModeSummary"
+      );
+
+      appendJsonSheet(
+        workbook,
+        state.res.costSummary,
+        "CostSummary"
+      );
+
+      if (
+        state.resLP &&
+        state.resMIP
+      ) {
+        appendJsonSheet(
+          workbook,
+          buildComparisonSummary(
+            state.resLP,
+            state.resMIP
+          ),
+          "ComparisonSummary"
+        );
+      }
+
+      const parameterRows =
+        Object.entries(
+          state.data.params
+        ).map(
+          ([Key, Value]) => ({
+            Key,
+            Value:
+              Number.isFinite(Value)
+                ? Value
+                : numberOrText(Value)
+          })
+        );
+
+      appendJsonSheet(
+        workbook,
+        parameterRows,
+        "Parameters"
+      );
+
+      appendJsonSheet(
+        workbook,
+        state.data.paramAudit,
+        "ParamAudit"
+      );
+
+      appendJsonSheet(
+        workbook,
+        state.data.ArcsAll,
+        "InputArcs"
+      );
+
+      XLSX.writeFile(
+        workbook,
+        `results_multimodal_V3_3_12_web_${timestamp()}.xlsx`,
+        {
+          compression: true
+        }
+      );
+
+      setStatus(
+        "Excel results workbook exported.",
+        "success"
+      );
+    } catch (error) {
+      setStatus(
+        `Export error: ${error.message}`,
+        "error"
+      );
+    }
+  });
+
+  function appendJsonSheet(
+    workbook,
+    rows,
+    sheetName
+  ) {
+    const sheet =
+      XLSX.utils.json_to_sheet(
+        rows.length > 0
+          ? rows
+          : [{
+              Message: "No data"
+            }]
+      );
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      sheet,
+      sheetName
+    );
+  }
+
+  function buildComparisonSummary(
+    lp,
+    mip
+  ) {
+    const metrics = [
+      "TotalCost",
+      "TransportCost",
+      "FixedCost",
+      "CO2Cost",
+      "TotalCO2",
+      "UsedArcs",
+      "OpenedY"
+    ];
+
+    return metrics.map(metric => {
+      const lpValue =
+        summaryValue(
+          lp.costSummary,
+          metric
+        );
+
+      const mipValue =
+        summaryValue(
+          mip.costSummary,
+          metric
+        );
+
+      const difference =
+        mipValue - lpValue;
+
+      return {
+        Metric: metric,
+        LP_Value: lpValue,
+        MIP_Value: mipValue,
+        Difference_MIP_minus_LP:
+          difference,
+        RelativeGap_percent:
+          Math.abs(lpValue) > 1e-12
+            ? 100 *
+              difference /
+              Math.abs(lpValue)
+            : NaN
+      };
+    });
+  }
+
+  // ==========================================================
+  // PNG EXPORT
+  // ==========================================================
+
+  exportPngButton.addEventListener("click", async () => {
+    try {
+      if (!state.res) {
+        throw new Error(
+          "Solve first."
+        );
+      }
+
+      const zip = new JSZip();
+
+      zip.file(
+        "network.png",
+        dataUrlBase64(
+          networkCanvas.toDataURL(
+            "image/png"
+          )
+        ),
+        {
+          base64: true
+        }
+      );
+
+      for (const [name, chart] of Object.entries(charts)) {
+        if (
+          chart &&
+          chart.canvas
+        ) {
+          zip.file(
+            `${safeFileName(name)}.png`,
+            dataUrlBase64(
+              chart.canvas.toDataURL(
+                "image/png"
+              )
+            ),
+            {
+              base64: true
+            }
+          );
+        }
+      }
+
+      const blob =
+        await zip.generateAsync({
+          type: "blob"
+        });
+
+      downloadBlob(
+        blob,
+        `logistics_hub_figures_${timestamp()}.zip`
+      );
+
+      setStatus(
+        "Network and chart PNG files exported in a ZIP archive.",
+        "success"
+      );
+    } catch (error) {
+      setStatus(
+        `PNG export error: ${error.message}`,
+        "error"
+      );
+    }
+  });
+
+  function dataUrlBase64(dataUrl) {
+    return dataUrl.split(",")[1];
+  }
+
+  // ==========================================================
+  // EXCEL TEMPLATE
+  // ==========================================================
+
+  templateButton.addEventListener("click", () => {
+    const workbook =
+      XLSX.utils.book_new();
+
+    const supply = [
+      {
+        IP: "IP1",
+        Supply: 120
+      },
+      {
+        IP: "IP2",
+        Supply: 80
+      }
+    ];
+
+    const demand = [
+      {
+        DC: "DC1",
+        Demand: 60
+      },
+      {
+        DC: "DC2",
+        Demand: 40
+      }
+    ];
+
+    const params = [
+      ["exportDemand", 100],
+      ["ExportRule", 2],
+      ["AutoBalance", 0],
+      ["UseDistanceCost", 1],
+      ["KL", 200],
+      ["KICD", 200],
+      ["KPORT", 120],
+      ["hL", 8],
+      ["hICD", 10],
+      ["hPORT", 6],
+      ["BigM", 300],
+      ["K_road", 1000000000],
+      ["K_rail", 1000000000],
+      ["K_water", 1000000000],
+      ["K_sea", 1000000000],
+      ["EF_road", 0.12],
+      ["EF_rail", 0.04],
+      ["EF_water", 0.02],
+      ["EF_sea", 0.015],
+      ["Emax", 1000000000],
+      ["lambdaCO2", 0],
+      ["LC_FixFlow", ""],
+      ["LC_MinFlow", ""],
+      ["LC_MaxFlow", ""],
+      ["LC_FlowType", 1],
+      ["ICD_FixFlow", ""],
+      ["ICD_MinFlow", ""],
+      ["ICD_MaxFlow", ""],
+      ["ICD_FlowType", 1],
+      ["PORT_FixFlow", ""],
+      ["PORT_MinFlow", ""],
+      ["PORT_MaxFlow", 120],
+      ["PORT_FlowType", 1]
+    ].map(
+      ([Key, Value]) => ({
+        Key,
+        Value
+      })
+    );
+
+    const arcs = [
+      ["IP1", "LC", "Road", 3.2, 120, 25, 1, 0, 35, "IP1 to LC"],
+      ["IP2", "ICD", "Road", 3.5, 100, 24, 1, 0, 42, "IP2 to ICD"],
+      ["IP1", "ICD", "Rail", 2.4, 100, 35, 1, 0, 55, "Rail candidate"],
+      ["IP2", "LC", "Road", 3.4, 100, 20, 1, 0, 38, "Road candidate"],
+      ["LC", "DC1", "Road", 2.2, 80, 14, 1, 0, 28, "Domestic"],
+      ["LC", "DC2", "Road", 2.5, 80, 14, 1, 0, 31, "Domestic"],
+      ["ICD", "DC1", "Rail", 1.8, 80, 18, 1, 0, 44, "Domestic"],
+      ["ICD", "DC2", "Road", 2.4, 80, 12, 1, 0, 34, "Domestic"],
+      ["LC", "PORT", "Water", 1.4, 120, 30, 1, 1, 65, "Export"],
+      ["ICD", "PORT", "Rail", 1.6, 120, 28, 1, 1, 58, "Export"],
+      ["PORT", "EXPORT", "Sea", 0.8, 120, 20, 1, 0, 250, "Optional onward sea arc"]
+    ].map(row => ({
+      From: row[0],
+      To: row[1],
+      Mode: row[2],
+      UnitCost: row[3],
+      Cap: row[4],
+      FixedCost: row[5],
+      Enabled: row[6],
+      IsExport: row[7],
+      Distance: row[8],
+      Notes: row[9]
+    }));
+
+    appendJsonSheet(
+      workbook,
+      supply,
+      "Supply"
+    );
+
+    appendJsonSheet(
+      workbook,
+      demand,
+      "Demand"
+    );
+
+    appendJsonSheet(
+      workbook,
+      params,
+      "Params"
+    );
+
+    appendJsonSheet(
+      workbook,
+      arcs,
+      "Arcs"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      "Logistics_Hub_Input_Template_V3_3_12.xlsx",
+      {
+        compression: true
+      }
+    );
+  });
+
+  // ==========================================================
+  // PARAM AUDIT AND DISPLAY
+  // ==========================================================
+
+  function updateAuditTable() {
+    auditBody.innerHTML = "";
+
+    if (!state.data) {
+      return;
+    }
+
+    for (const row of state.data.paramAudit) {
+      const tr =
+        document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${escapeHtml(row.ParamName)}</td>
+        <td>${escapeHtml(row.MatchedRawKey)}</td>
+        <td>${escapeHtml(String(row.RowIndex ?? ""))}</td>
+        <td>${escapeHtml(row.Status)}</td>
+        <td>${escapeHtml(numberOrText(row.ValueUsed))}</td>
+      `;
+
+      auditBody.appendChild(tr);
+    }
+  }
+
+  function updateParamLine(result = null) {
+    if (!state.data) {
+      paramLine.textContent =
+        "Parameters not loaded.";
+
+      return;
+    }
+
+    const p =
+      state.data.params;
+
+    const base =
+      `exportDemand=${formatNumber(p.exportDemand)} | ExportRule=${p.ExportRule === 2 ? "fixed" : "minimum"} | KPORT=${numberOrText(p.KPORT)} | AutoBalance=${p.AutoBalance ? "yes" : "no"} | BigM=${formatNumber(p.BigM)} | K_road=${numberOrText(p.K_road)} | K_rail=${numberOrText(p.K_rail)} | K_water=${numberOrText(p.K_water)} | K_sea=${numberOrText(p.K_sea)} | lambdaCO2=${formatNumber(p.lambdaCO2)} | Emax=${numberOrText(p.Emax)}`;
+
+    if (!result) {
+      paramLine.textContent =
+        `${base} | Supply=${formatNumber(state.data.totalSupply)} | DomesticDemand=${formatNumber(state.data.totalDomesticDemand)} | Surplus=${formatNumber(state.data.surplusForExport)}`;
+
+      return;
+    }
+
+    const nodeSummary =
+      result.nodeFlowTable
+        .map(
+          row =>
+            `${row.Node} In ${formatNumber(row.Inflow)} Out ${formatNumber(row.Outflow)} (${row.ConstraintType === "None" ? "free" : `${row.ConstraintType} ${row.ConstraintValue}`})`
+        )
+        .join(" | ");
+
+    paramLine.textContent =
+      `${base} | ${nodeSummary}`;
+  }
+
+  // ==========================================================
+  // CLEAR
+  // ==========================================================
+
+  function clearResults() {
+    resultsBody.innerHTML = "";
+
+    document
+      .getElementById("modalRoad")
+      .textContent = "Road: 0.0%";
+
+    document
+      .getElementById("modalRail")
+      .textContent = "Rail: 0.0%";
+
+    document
+      .getElementById("modalWater")
+      .textContent = "Waterway: 0.0%";
+
+    document
+      .getElementById("modalSea")
+      .textContent = "Sea: 0.0%";
+
+    [
+      exportExcelButton,
+      kpiButton,
+      dashboardButton,
+      exportPngButton
+    ].forEach(
+      element => {
+        element.disabled = true;
+      }
+    );
+
+    Object.keys(charts).forEach(
+      destroyChart
+    );
+  }
+
+  // ==========================================================
+  // GENERIC HELPERS
+  // ==========================================================
+
+  function cleanString(value) {
+    return String(value ?? "").trim();
+  }
+
+  function normalizeParamKey(value) {
+    return cleanString(value)
+      .toLowerCase()
+      .replace(/[\s_-]+/g, "");
+  }
+
+  function toNumber(value) {
+    const number =
+      Number(
+        String(value ?? "")
+          .replace(/,/g, "")
+          .trim()
+      );
+
+    if (!Number.isFinite(number)) {
+      throw new Error(
+        `Expected a numeric value, received "${value}".`
+      );
+    }
+
+    return number;
+  }
+
+  function optionalNumber(value) {
+    if (
+      value === null ||
+      value === undefined ||
+      String(value).trim() === ""
+    ) {
+      return NaN;
+    }
+
+    const normalized =
+      String(value)
+        .replace(/,/g, "")
+        .trim();
+
+    if (
+      /^(inf|infinity)$/i.test(normalized)
+    ) {
+      return Infinity;
+    }
+
+    const number =
+      Number(normalized);
+
+    return Number.isFinite(number)
+      ? number
+      : NaN;
+  }
+
+  function sum(values) {
+    return values.reduce(
+      (total, value) =>
+        total + value,
+      0
+    );
+  }
+
+  function clamp(
+    value,
+    minimum,
+    maximum
+  ) {
+    return Math.min(
+      maximum,
+      Math.max(minimum, value)
+    );
+  }
+
+  function formatInputValue(value) {
+    return Number.isFinite(value)
+      ? String(value)
+      : "";
+  }
+
+  function formatNumber(value) {
+    if (!Number.isFinite(value)) {
+      return numberOrText(value);
+    }
+
+    const absolute =
+      Math.abs(value);
+
+    if (
+      absolute !== 0 &&
+      (
+        absolute >= 1000000 ||
+        absolute < 0.0001
+      )
+    ) {
+      return value.toExponential(4);
+    }
+
+    return Number(value)
+      .toFixed(3)
+      .replace(/\.?0+$/, "");
+  }
+
+  function numberOrText(value) {
+    if (Number.isNaN(value)) {
+      return "Not set";
+    }
+
+    if (
+      value === Infinity ||
+      value === "Infinity"
+    ) {
+      return "Inf";
+    }
+
+    if (value === -Infinity) {
+      return "-Inf";
+    }
+
+    if (typeof value === "number") {
+      return formatNumber(value);
+    }
+
+    return String(value ?? "");
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function timestamp() {
+    const date = new Date();
+
+    return [
+      date.getFullYear(),
+      String(
+        date.getMonth() + 1
+      ).padStart(2, "0"),
+      String(
+        date.getDate()
+      ).padStart(2, "0"),
+      "_",
+      String(
+        date.getHours()
+      ).padStart(2, "0"),
+      String(
+        date.getMinutes()
+      ).padStart(2, "0"),
+      String(
+        date.getSeconds()
+      ).padStart(2, "0")
+    ].join("");
+  }
+
+  function safeFileName(value) {
+    return String(value)
+      .replace(
+        /[^a-zA-Z0-9_-]/g,
+        "_"
+      );
+  }
+
+  function downloadBlob(
+    blob,
+    fileName
+  ) {
+    const url =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    link.href = url;
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(url),
+      1000
+    );
+  }
+
+  // Display runtime errors in the status panel instead of failing silently.
+  window.addEventListener("error", event => {
+    if (event?.message) {
+      setStatus(`JavaScript error: ${event.message}`, "error");
+    }
+  });
+
+  window.addEventListener("unhandledrejection", event => {
+    const message = event?.reason?.message || String(event?.reason || "Unknown promise rejection");
+    setStatus(`JavaScript error: ${message}`, "error");
+  });
+
+  // Initial blank network and asynchronous solver startup.
+  drawNetwork(null);
+  setStatus("Import Excel is ready. Loading the LP/MIP solver in the background...");
+  initializeSolver();
+
+</script>
+
+</body>
+</html>
